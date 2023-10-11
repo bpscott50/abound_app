@@ -1,8 +1,8 @@
-#to view dataset and merge all csvs into master file
-
 import pandas as pd
 import numpy as np
 import random
+
+#to view datasets and merge all csvs into master file
 
 applications = pd.read_csv("application.csv", sep=";")
 credit = pd.read_csv("credit_file.csv", sep=";")
@@ -15,20 +15,128 @@ pd.set_option('display.max_columns', None)
 master = pd.merge(applications, credit, on='application_id', how='inner')
 master = pd.merge(master, transactions, on='application_id', how='inner')
 master = pd.merge(master, outcomes, on='application_id', how='inner')
+master.head()
 
-#----------------------------------------------------------------------------------------------
 
+#-----------------------------APPLICANTS THAT CAN BE AUTOMATICALLY APPROVED/DECLINED---------------------------
 #automatically decline applicants with a score <561
 #automatically approve applicants with a score >960
-#rate everything between as either poor, fair or good
-#applicants with a score between 561-960 are then given a score determined on the postives/risks outlined before
+#applications with an active CCJ are also automatically declined 
+def assign_decision(row):
+    if row['sp_active_ccj_count'] > 0:
+        return 'DECLINE'
+    elif (row['credit_score'] >= 0) and (row['credit_score'] <= 560):
+        return 'DECLINE'
+    elif (row['credit_score'] >= 561) and (row['credit_score'] <= 720):
+        return 'POOR'
+    elif (row['credit_score'] >= 721) and (row['credit_score'] <= 880):
+        return 'FAIR'
+    elif (row['credit_score'] >= 881) and (row['credit_score'] <= 960):
+        return 'GOOD'
+    else:
+        return 'APPROVE'
 
-master['decision'] = np.where((merged_data['credit_score'] >= 0) & (merged_data['credit_score'] <= 560), 'DECLINE',
-                              np.where((merged_data['credit_score'] >= 561) & (merged_data['credit_score'] <= 720), 'POOR',
-                              np.where((merged_data['credit_score'] >= 721) & (merged_data['credit_score'] <= 880), 'FAIR',
-                              np.where((merged_data['credit_score'] >= 881) & (merged_data['credit_score'] <= 960), 'GOOD',
-                              'APPROVE'))))
+#apply the function to create the 'credit_grading' column
+master['credit_grading'] = master.apply(assign_decision, axis=1)
 
-random_seed = random.randint(0, 1000)  #generate a random seed
+#generate a random seed
+random_seed = random.randint(0, 1000)
+#shuffle the df using the random seed
 shuffled_master = master.sample(frac=1, random_state=random_seed)
+
+#display the head of the shuffled DataFrame
 shuffled_master.head()
+
+#----------------------------DETERMINE SCORE ON APPLICANTS THAT ARE NOT AUTOMATICALLY DECLINED/APPROVED------------------------------------
+#A HIGHER SCORE INDICATES A RISKIER APPLICATION
+#ALL VARIABLES CAN BE CHANGED TO BETTER FIT THE SCORING SYSTEM, VALUES HAVE JUST BEEN CHOSEN AS AN EXAMPLE
+def calculate_score(row):
+    #define a dictionary to map credit_grading to scores
+    grading_scores = {
+        'POOR': 10,   #assign a higher score to POOR
+        'FAIR': 6,    #assign a moderate score to FAIR
+        'GOOD': 3     #assign a lower score to GOOD
+    }
+    
+    # Assign the score based on credit_grading
+    score = grading_scores.get(row['credit_grading'], 0)  # Default to 0 for other categories
+    
+    
+    # total CCJs
+    if row['sp_total_ccj_count'] > 0:
+        score += 8  # high risk
+    
+    #bankruptcy or IVAs
+    if row['sp_ever_iva_br'] == 'True':
+        score += 5  #high risk
+    
+    #defaults and arrears
+    if 0 <= row['months_since_latest_arrears'] <= 6:
+        score += 15  #very high risk
+    elif 6 < row['months_since_latest_arrears'] <= 12:
+        score += 10  #high risk
+    elif 12 < row['months_since_latest_arrears'] <= 24:
+        score += 5  #moderate risk
+    
+    #high credit utilization
+    if row['card_utilisation'] > 0.5:
+        score += 7  #moderate risk
+    
+    #number of active cards
+    if row['num_active_cards'] > 5:
+        score += 5  #moderate risk
+    
+    #number of active loans
+    if row['num_active_loans'] >= 5:
+        score += 10  # High risk
+    
+    #debt to balance ratio
+    debt_to_income_ratio = row['total_active_balance'] / row['total_borrowing_cost']
+    if debt_to_income_ratio > 0.5:
+        score += 7  #moderate risk
+    
+    #high loan amounts
+    if row['requested_amount'] > 20000:
+        score += 7  #moderate risk
+    
+    return score
+
+#apply the function to calculate scores for all applications
+shuffled_master['score'] = shuffled_master.apply(calculate_score, axis=1)
+
+# Filter applications that are not automatically declined or approved
+# As applications were that were automatically declined/approved were decided earlier, we are only interested in
+# the applications that sit between those
+filtered_applications = shuffled_master[
+    (shuffled_master['credit_grading'] != 'DECLINE') & (shuffled_master['credit_grading'] != 'APPROVE')
+]
+
+#generate a random seed
+random_seed = random.randint(0, 1000)
+
+
+filtered_applications = filtered_applications.sample(frac=1, random_state=random_seed)
+filtered_applications.head()
+#to display just the application id, grading and score:
+#filtered_applications[['application_id', 'credit_grading', 'score']].head()
+
+-------------------------------# Determining when to manually review an application for an underwriter-------------------------------------
+# If the score for an application falls outside a specified deviation of the mean score for that credit_grading
+# then it will be flagged for manual review, if not then it will state approve
+
+#calculate the average score for each credit grading
+average_scores = filtered_applications.groupby('credit_grading')['score'].transform('mean')
+
+#define a threshold for deviation (adjust as needed)
+deviation_threshold = 2  #threshold value can be adjusted to a more accurate value
+
+#calculate the absolute deviation of each score from the average
+deviation = abs(filtered_applications['score'] - average_scores)
+
+#assign MANUAL REVIEW if deviation exceeds the threshold, APPROVE otherwise
+filtered_applications['manual_review'] = 'APPROVE'
+filtered_applications.loc[deviation > deviation_threshold, 'manual_review'] = 'MANUAL REVIEW'
+
+
+filtered_applications = filtered_applications.sample(frac=1, random_state=random_seed)
+filtered_applications.head()
