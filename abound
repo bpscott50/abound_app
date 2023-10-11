@@ -1,0 +1,34 @@
+#to view dataset and merge all csvs into master file
+
+import pandas as pd
+import numpy as np
+import random
+
+applications = pd.read_csv("application.csv", sep=";")
+credit = pd.read_csv("credit_file.csv", sep=";")
+outcomes = pd.read_csv("outcome.csv", sep=";")
+transactions = pd.read_csv("transaction.csv", sep=";")
+pd.set_option('display.max_columns', None)
+
+#merging all data into one csv
+
+master = pd.merge(applications, credit, on='application_id', how='inner')
+master = pd.merge(master, transactions, on='application_id', how='inner')
+master = pd.merge(master, outcomes, on='application_id', how='inner')
+
+#----------------------------------------------------------------------------------------------
+
+#automatically decline applicants with a score <561
+#automatically approve applicants with a score >960
+#rate everything between as either poor, fair or good
+#applicants with a score between 561-960 are then given a score determined on the postives/risks outlined before
+
+master['decision'] = np.where((merged_data['credit_score'] >= 0) & (merged_data['credit_score'] <= 560), 'DECLINE',
+                              np.where((merged_data['credit_score'] >= 561) & (merged_data['credit_score'] <= 720), 'POOR',
+                              np.where((merged_data['credit_score'] >= 721) & (merged_data['credit_score'] <= 880), 'FAIR',
+                              np.where((merged_data['credit_score'] >= 881) & (merged_data['credit_score'] <= 960), 'GOOD',
+                              'APPROVE'))))
+
+random_seed = random.randint(0, 1000)  #generate a random seed
+shuffled_master = master.sample(frac=1, random_state=random_seed)
+shuffled_master.head()
