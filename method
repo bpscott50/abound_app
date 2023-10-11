@@ -1,0 +1,6 @@
+"""
+METHOD FOR UNDERWRITERS TO BE ABLE TO ONLY LOOK AT DIFFICULT CASES 
+Automatically disregard applications that have an excellent or very poor credit score.
+Then assign a score for each application_id based on the rest of the criteria outlined in the priority order.
+Determine if the score accurately reflects the credit_grading that has been assigned. If not, then send to a manual review by an underwriter to check other factors.
+"""
