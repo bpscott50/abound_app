@@ -1,0 +1,17 @@
+
+#------------POSSIBLE RISKS AND POSITIVE FACTORS------------------
+
+#------------RISKS FACTORS:---------------------------------------
+# 1. credit score - applicants with low credit scores are higher risk. Automatically decline applicants with CS<561
+# 2. CCJs - applicants with a history of CCJs or active CCJs will be seen as higher risk
+# 3. arrears and defaults - applicants with a history of missed payments or defaults may be seen as higher risk
+# 4. bankrupt or IVA - applicants who have ever been bankrupt or entered an IVA may be riskier
+# 5. special instructions - applicants with debt management plans may be seen as riskier
+# 6. high credit utilisation - applicants with high credit card utilization can be risky, may indicate too much reliance on credit
+
+#------------POSITIVE FACTORS:------------------------------------
+# 1. credit score - higher credit scores means the applicant is safer to loan to
+# 2. arrears/default history - applicants with no history of loan defaults may be lower risk
+# 3. stable employment - applicants with stable employment and a higher salary may be lower risk
+# 4. low debt to income ratio - applicants with a low ratio of debt to salary may be lower risk
+
