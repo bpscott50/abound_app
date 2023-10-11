@@ -1,0 +1,23 @@
+"""
+ORDER OF PRIORITY
+1. credit score (most important as it is a collective score of all other factors/variables) 
+            -automatically decline if <561 (very poor), accept if >960(excellent)
+2. active CCJs - automatically decline if active CCJs >0
+3. total CCJs - previous CCJs is a high priority risk
+3. bankruptcy or IVAs - ever been declared bankrupt
+4. defaults and arrears - rank based on how many months since last arrears. More recent = high risk
+5. high credit utilization - if card_utilisation>0.5 (just an estimate)
+6. number of active cards - more active cards is a concern for an application
+7. number of active loans - more loans is a cause for concern with an application (>=5 is risky)
+8. debt to income ratio - total_active_balance to amount of total_borrowing cost (maybe idk?)
+9. high loan amounts - higher loans will need to be scrutinized in more detail
+
+
+FACTORS TO BE CHECKED MANUALLY BY UNDERWRITERS 
+would also be interesting to look at whether the application is under debit or credit
+    credit may be seen as riskier as the applicant is requesting to borrow money
+it would also be useful to look at the type of transaction that the applicant is trying to make
+    some categories would take a higher priority for approval over other. (look at loan category and subcategory
+    for example, car payments should be more likely to be approved than a loan request to pay for video games etc
+    
+"""
